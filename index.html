@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ركو">
+<meta name="theme-color" content="#F8FAFC">
+<title>ركو</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one narrow column of dose cards, bottom tab bar, sheet for forms */
+:root{
+  --bg:#F8FAFC; --card:#FFFFFF; --mint:#A7DCC8; --primary:#27866E; --on-primary:#FFFFFF;
+  --lav:#E9E5FF; --text:#263238; --muted:#64748B; --line:#E5EAF0;
+  --taken-bg:#E6F4EE; --due-bg:#FFF4DC; --due-fg:#8A5A00; --danger:#B42318; --danger-bg:#FDECEA;
+  --font:"Readex Pro", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1A1D; --card:#172427; --mint:#2F5D50; --primary:#5CC3A4; --on-primary:#06231B;
+  --lav:#2A2745; --text:#E6EEF0; --muted:#94A3B8; --line:#26363A;
+  --taken-bg:#16362D; --due-bg:#3A2E12; --due-fg:#F5C969; --danger:#FF8A80; --danger-bg:#3A1A18;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;
+  -webkit-tap-highlight-color:transparent;min-height:100vh}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:560px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+h1{font-size:1.6rem;margin:0;font-weight:700;text-wrap:balance}
+h2{font-size:1.15rem;margin:0 0 4px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-direction:column;gap:4px;margin-bottom:18px}
+.date{color:var(--muted);font-size:.95rem}
+.progress{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--primary);border-radius:99px;transition:width .3s}
+
+/* dose cards */
+.list{display:flex;flex-direction:column;gap:12px}
+.dose{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.dose.taken{background:var(--taken-bg);border-color:transparent}
+.dose-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dose-head>div{min-width:0}
+.dose-name{font-weight:600;font-size:1.1rem;overflow-wrap:anywhere}
+.dose-desc{color:var(--muted);overflow-wrap:anywhere}
+.time{font-weight:600;font-size:1.05rem;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:500;padding:3px 10px;border-radius:99px;background:var(--lav);width:max-content}
+.chip.due{background:var(--due-bg);color:var(--due-fg)}
+.chip.taken{background:var(--mint);color:var(--text)}
+.chip.open{background:var(--line);color:var(--muted)}
+.chip.paused{background:var(--line);color:var(--muted)}
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;font-weight:600;cursor:pointer;min-height:50px}
+.btn.primary{background:var(--primary);color:var(--on-primary)}
+.btn.soft{background:var(--lav);color:var(--text)}
+.btn.ghost{background:transparent;color:var(--primary);padding:8px 10px;min-height:40px}
+.btn.danger{background:var(--danger-bg);color:var(--danger)}
+.btn.block{width:100%}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.daypick label:focus-within{outline:3px solid var(--primary);outline-offset:2px}
+.btn:active{transform:scale(.98)}
+.taken-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+
+.empty{text-align:center;background:var(--card);border:1px dashed var(--line);border-radius:20px;padding:32px 20px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty .ico{width:56px;height:56px;border-radius:50%;background:var(--mint);display:grid;place-items:center}
+
+/* meds */
+.med{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.med.off{opacity:.75}
+.times{display:flex;flex-wrap:wrap;gap:6px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions .btn{flex:1 1 auto;min-height:44px;padding:10px 12px;font-size:.92rem}
+.confirm{background:var(--danger-bg);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+
+/* history */
+.day{margin-bottom:18px}
+.day h3{font-size:.95rem;color:var(--muted);font-weight:500;margin:0 0 8px}
+.hrow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
+.hrow>div{min-width:0}
+.note{background:var(--lav);border-radius:14px;padding:12px 14px;font-size:.9rem;margin-bottom:16px}
+
+/* settings */
+.group{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:10px;font-weight:500;cursor:pointer;min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--primary);color:var(--on-primary)}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.switch input{width:24px;height:24px;accent-color:var(--primary)}
+ol.steps{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px}
+
+/* tabs */
+.tabs{position:fixed;inset:auto 0 0 0;background:var(--card);border-top:1px solid var(--line);
+  display:flex;justify-content:center;z-index:5;
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.tabs>div{display:flex;width:100%;max-width:560px}
+.tab{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:.78rem;color:var(--muted);cursor:pointer;border-radius:12px;min-height:52px}
+.tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-current="page"]{color:var(--primary);font-weight:600}
+
+/* sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;
+  padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.bar>i{transition:none}}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>.lbl{font-weight:500;font-size:.95rem}
+input[type=text],input[type=date],input[type=time],textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:48px}
+textarea{min-height:70px;resize:vertical}
+.timerow{display:flex;gap:8px;align-items:center}
+.timerow input{flex:1}
+.daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daypick label{display:grid;place-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:44px;font-size:.85rem;cursor:pointer;position:relative}
+.daypick input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.daypick label:has(input:checked){background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.err{color:var(--danger);font-size:.88rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2>*{min-width:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;font-size:.92rem;max-width:calc(100% - 32px);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav class="tabs" aria-label="tabs"><div id="tabs"></div></nav>
+<div id="sheet-root"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const KEY="pillcheck.v1";
+const DUE_MIN=60; // minutes a dose stays "due now" after its time
+
+/* ---------- i18n ---------- */
+const T={
+ar:{today:"اليوم",meds:"أدويتي",history:"السجل",settings:"الإعدادات",
+ hello:["صباح الخير","مساء الخير"],summary:(a,b)=>`تم تسجيل ${a} من ${b} جرعات`,
+ upcoming:"قادمة",due:"موعدها الآن",taken:"تم أخذها",notLogged:"غير مسجلة",paused:"متوقف مؤقتاً",
+ takeBtn:"تم أخذ الجرعة",undo:"تراجع",takenAt:t=>`سُجّلت ${t}`,
+ emptyToday:"ما في جرعات مجدولة اليوم",emptyTodaySub:"أضف دواءك الأول وحدد مواعيده.",
+ emptyTodayHas:"ما في جرعات اليوم حسب جداول أدويتك.",
+ addMed:"إضافة دواء",editMed:"تعديل الدواء",noMeds:"ما في أدوية بعد",noMedsSub:"ابدأ بإضافة اسم الدواء والجرعة كما وصفها الطبيب.",
+ name:"اسم الدواء",dose:"وصف الجرعة",dosePh:"مثلاً: حبة واحدة بعد الأكل",namePh:"مثلاً: فيتامين د",
+ times:"مواعيد التذكير",addTime:"+ موعد آخر",removeTime:"حذف الموعد",days:"الأيام",everyday:"كل يوم",
+ start:"تاريخ البداية",end:"تاريخ النهاية (اختياري)",notes:"ملاحظات (اختياري)",save:"حفظ",cancel:"إلغاء",
+ edit:"تعديل",pause:"إيقاف مؤقت",resume:"استئناف",del:"حذف",confirmDel:n=>`حذف «${n}»؟ ما رح يتأثر سجل الجرعات السابقة.`,
+ yesDel:"نعم، احذف",
+ errName:"اكتب اسم الدواء.",errTimes:"أضف موعداً واحداً على الأقل.",errDays:"اختر يوماً واحداً على الأقل.",errDates:"تاريخ النهاية لازم يكون بعد البداية.",errDup:"في موعد مكرر.",
+ histNote:"السجل يعرض ما سجّلته أنت فقط. «غير مسجلة» ما بتعني إنك ما أخذت الدواء.",
+ noHistory:"لسا ما في سجل.",
+ lang:"اللغة",timefmt:"تنسيق الوقت",h12:"12 ساعة",h24:"24 ساعة",
+ remind:"التذكيرات",remindSub:"صفحة الويب ما بتقدر تبعث إشعار وهي مسكّرة، لهيك التذكير بصير عن طريق تطبيق التقويم بالآيفون.",
+ addAllCal:"إضافة كل المواعيد للتقويم",addCal:"إضافة للتقويم",
+ calSteps:["اضغط «إضافة كل المواعيد للتقويم».","بالآيفون اختار «إضافة الكل» (Add All).","تأكد إن إشعارات تطبيق التقويم مفعّلة من الإعدادات."],
+ calWarn:"إذا عدّلت موعد دواء أو أوقفته أو حذفته، احذف مواعيده القديمة من تطبيق التقويم وأضفه من جديد.",
+ hideName:"إخفاء اسم الدواء في التقويم",hideNameSub:"بصير عنوان التذكير «موعد دواء» فقط، عشان شاشة القفل.",
+ calTitle:"موعد دواء",calNoMeds:"ما في أدوية فعّالة لإضافتها.",
+ calNeedEdit:"عدّلت المواعيد؟ احذف القديم من التقويم وأضف هذا الدواء من جديد.",
+ data:"البيانات",dataSub:"كل البيانات محفوظة على هذا الجهاز فقط، بدون حساب أو إنترنت.",wipe:"حذف كل البيانات",wipeConfirm:"متأكد؟ رح تنحذف كل الأدوية والسجل من هذا الجهاز.",wipeYes:"نعم، احذف الكل",wiped:"انحذفت البيانات",
+ install:"تثبيت على الشاشة الرئيسية",installSteps:["افتح الصفحة بـ Safari.","اضغط زر المشاركة.","اختار «إضافة إلى الشاشة الرئيسية»."],
+ saved:"انحفظ",takenToast:"تم التسجيل",undone:"تم التراجع",storageWarn:"المتصفح مانع الحفظ، البيانات رح تضيع لما تسكّر الصفحة.",
+ dayNames:["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"],am:"ص",pm:"م",
+ todayLbl:"اليوم",yesterday:"أمس",scheduleFrom:d=>`الجدول الحالي من ${d}`,ends:d=>`ينتهي ${d}`,
+ calFile:"ركو"},
+en:{today:"Today",meds:"My meds",history:"History",settings:"Settings",
+ hello:["Good morning","Good evening"],summary:(a,b)=>`${a} of ${b} doses logged`,
+ upcoming:"Upcoming",due:"Due now",taken:"Taken",notLogged:"Not logged",paused:"Paused",
+ takeBtn:"Mark as taken",undo:"Undo",takenAt:t=>`Logged ${t}`,
+ emptyToday:"No doses scheduled today",emptyTodaySub:"Add your first medication and set its times.",
+ emptyTodayHas:"Nothing scheduled today based on your medication schedules.",
+ addMed:"Add medication",editMed:"Edit medication",noMeds:"No medications yet",noMedsSub:"Start by adding the name and dose as your doctor prescribed.",
+ name:"Medication name",dose:"Dose",dosePh:"e.g. 1 tablet after food",namePh:"e.g. Vitamin D",
+ times:"Reminder times",addTime:"+ Another time",removeTime:"Remove time",days:"Days",everyday:"Every day",
+ start:"Start date",end:"End date (optional)",notes:"Notes (optional)",save:"Save",cancel:"Cancel",
+ edit:"Edit",pause:"Pause",resume:"Resume",del:"Delete",confirmDel:n=>`Delete “${n}”? Past dose history stays.`,
+ yesDel:"Yes, delete",
+ errName:"Enter the medication name.",errTimes:"Add at least one time.",errDays:"Pick at least one day.",errDates:"End date must be after the start date.",errDup:"A time is repeated.",
+ histNote:"History shows only what you logged. “Not logged” doesn’t mean you didn’t take it.",
+ noHistory:"No history yet.",
+ lang:"Language",timefmt:"Time format",h12:"12-hour",h24:"24-hour",
+ remind:"Reminders",remindSub:"A web page can’t send notifications while it’s closed, so reminders go through the iPhone Calendar app.",
+ addAllCal:"Add all times to Calendar",addCal:"Add to Calendar",
+ calSteps:["Tap “Add all times to Calendar”.","On iPhone, choose “Add All”.","Make sure Calendar notifications are on in Settings."],
+ calWarn:"If you change, pause or delete a medication, remove its old events from Calendar and add it again.",
+ hideName:"Hide medication name in Calendar",hideNameSub:"The reminder title becomes “Medication time”, for lock-screen privacy.",
+ calTitle:"Medication time",calNoMeds:"No active medications to add.",
+ calNeedEdit:"Changed the times? Remove the old events from Calendar and add this medication again.",
+ data:"Data",dataSub:"Everything is saved on this device only. No account, no internet needed.",wipe:"Delete all data",wipeConfirm:"Sure? All medications and history on this device will be deleted.",wipeYes:"Yes, delete all",wiped:"Data deleted",
+ install:"Add to Home Screen",installSteps:["Open this page in Safari.","Tap the Share button.","Choose “Add to Home Screen”."],
+ saved:"Saved",takenToast:"Logged",undone:"Undone",storageWarn:"This browser blocks saving. Data will be lost when the page closes.",
+ dayNames:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],am:"AM",pm:"PM",
+ todayLbl:"Today",yesterday:"Yesterday",scheduleFrom:d=>`Current schedule since ${d}`,ends:d=>`Ends ${d}`,
+ calFile:"ركو"}
+};
+
+/* ---------- state ---------- */
+let storageOk=true;
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&s.meds&&s.logs) return s;}}
+  catch(e){storageOk=false}
+  return {v:1,settings:{lang:"ar",h24:false,hideName:false},meds:[],logs:{}};
+}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));storageOk=true}catch(e){storageOk=false}}
+let tab="today", confirmId=null, wipeAsk=false, calDirty={};
+const t=()=>T[S.settings.lang]||T.ar;
+
+/* ---------- dates ---------- */
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const addDays=(s,n)=>{const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d)};
+const todayStr=()=>ymd(new Date());
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function fmtTime(hm){
+  const [h,m]=hm.split(":").map(Number);
+  if(S.settings.h24) return `${pad(h)}:${pad(m)}`;
+  const h12=h%12||12; return `${h12}:${pad(m)} ${h<12?t().am:t().pm}`;
+}
+function fmtClock(iso){const d=new Date(iso);return fmtTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`)}
+function fmtDate(s,opts){
+  const loc=S.settings.lang==="ar"?"ar-JO-u-nu-latn":"en-GB";
+  try{return parseYmd(s).toLocaleDateString(loc,opts||{weekday:"long",day:"numeric",month:"long"})}catch(e){return s}
+}
+
+/* ---------- schedule model ----------
+ med = {id,name,dose,notes,start,end,created,updated,
+        sched:[{from,times:[HH:MM],days:[0-6]}],   // versions; edits apply from today on
+        pauses:[{from,to|null}], deleted:false} */
+function schedFor(med,date){
+  let cur=null; for(const v of med.sched){ if(v.from<=date) cur=v; } return cur;
+}
+function isPaused(med,date){return (med.pauses||[]).some(p=>p.from<=date&&(!p.to||date<p.to))}
+function pausedNow(med){return (med.pauses||[]).some(p=>!p.to)}
+function dosesOn(date){
+  const out=[]; const dow=parseYmd(date).getDay();
+  for(const m of S.meds){
+    if(m.deleted) continue;
+    if(date<m.start||(m.end&&date>m.end)) continue;
+    if(isPaused(m,date)) continue;
+    const v=schedFor(m,date); if(!v||!v.days.includes(dow)) continue;
+    for(const tm of v.times) out.push({med:m,time:tm,key:`${m.id}|${date}|${tm}`});
+  }
+  return out.sort((a,b)=>a.time.localeCompare(b.time)||a.med.name.localeCompare(b.med.name));
+}
+function status(date,time,key){
+  if(S.logs[key]) return "taken";
+  const now=new Date(), [h,m]=time.split(":").map(Number);
+  const due=parseYmd(date); due.setHours(h,m,0,0);
+  const diff=(now-due)/60000;
+  if(diff<0) return "upcoming";
+  if(diff<DUE_MIN) return "due";
+  return "open";
+}
+
+/* ---------- helpers ---------- */
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=s=>document.querySelector(s);
+let toastTimer;
+function toast(msg){const el=$("#toast");el.textContent=msg;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,2200)}
+const chipCls={upcoming:"",due:"due",taken:"taken",open:"open"};
+const chipTxt=st=>({upcoming:t().upcoming,due:t().due,taken:t().taken,open:t().notLogged})[st];
+const icon={
+ today:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+ meds:'<svg viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>',
+ history:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/></svg>',
+ settings:'<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'
+};
+
+/* ---------- render ---------- */
+function applyLang(){
+  const ar=S.settings.lang==="ar";
+  document.documentElement.lang=ar?"ar":"en"; document.documentElement.dir=ar?"rtl":"ltr";
+}
+function renderTabs(){
+  $("#tabs").innerHTML=["today","meds","history","settings"].map(k=>
+    `<button class="tab" data-tab="${k}" ${tab===k?'aria-current="page"':""}>${icon[k]}<span>${t()[k]}</span></button>`).join("");
+}
+function render(){
+  applyLang(); renderTabs();
+  const v={today:vToday,meds:vMeds,history:vHistory,settings:vSettings}[tab]();
+  $("#app").innerHTML=(storageOk?"":`<div class="note">${t().storageWarn}</div>`)+v;
+}
+function vToday(){
+  const d=todayStr(), doses=dosesOn(d);
+  const taken=doses.filter(x=>S.logs[x.key]).length;
+  const hr=new Date().getHours();
+  let h=`<div class="top"><div class="date">${esc(fmtDate(d))}</div><h1>${t().hello[hr<12?0:1]}</h1>`;
+  if(doses.length){
+    const pct=Math.round(taken/doses.length*100);
+    h+=`<div class="progress"><div class="num">${t().summary(taken,doses.length)}</div><div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
+  }
+  h+=`</div>`;
+  if(!doses.length){
+    const has=S.meds.some(m=>!m.deleted);
+    return h+`<div class="empty"><div class="ico">${icon.meds}</div><h2>${t().emptyToday}</h2><div class="muted">${has?t().emptyTodayHas:t().emptyTodaySub}</div>${has?"":`<button class="btn primary" data-act="add">${t().addMed}</button>`}</div>`;
+  }
+  h+=`<div class="list">`;
+  for(const x of doses){
+    const st=status(d,x.time,x.key), log=S.logs[x.key];
+    h+=`<div class="dose ${st==="taken"?"taken":""}"><div class="dose-head"><div><div class="dose-name">${esc(x.med.name)}</div>${x.med.dose?`<div class="dose-desc">${esc(x.med.dose)}</div>`:""}</div><div class="time num">${fmtTime(x.time)}</div></div>`;
+    if(st==="taken"){
+      h+=`<div class="taken-row"><span class="chip taken">✓ ${t().taken} · <span class="num">${t().takenAt(fmtClock(log.at))}</span></span><button class="btn ghost" data-act="undo" data-key="${x.key}">${t().undo}</button></div>`;
+    }else{
+      h+=`<span class="chip ${chipCls[st]}">${chipTxt(st)}</span><button class="btn primary block" data-act="take" data-key="${x.key}">${t().takeBtn}</button>`;
+    }
+    h+=`</div>`;
+  }
+  return h+`</div>`;
+}
+function vMeds(){
+  const meds=S.meds.filter(m=>!m.deleted);
+  let h=`<div class="section-head"><h1>${t().meds}</h1>${meds.length?`<button class="btn primary" data-act="add">${t().addMed}</button>`:""}</div>`;
+  if(!meds.length) return h+`<div class="empty"><div class="ico">${icon.meds}</div><h2>${t().noMeds}</h2><div class="muted">${t().noMedsSub}</div><button class="btn primary" data-act="add">${t().addMed}</button></div>`;
+  h+=`<div class="list">`;
+  const td=todayStr();
+  for(const m of meds){
+    const v=m.sched[m.sched.length-1], p=pausedNow(m), ended=m.end&&m.end<td;
+    const sep=S.settings.lang==="ar"?"، ":", ";
+    h+=`<div class="med ${p||ended?"off":""}"><div class="dose-head"><div><div class="dose-name">${esc(m.name)}</div>${m.dose?`<div class="dose-desc">${esc(m.dose)}</div>`:""}</div>${p?`<span class="chip paused">${t().paused}</span>`:""}</div>
+      <div class="times">${v.times.map(x=>`<span class="chip num">${fmtTime(x)}</span>`).join("")}</div>
+      <div class="muted small">${v.days.length===7?t().everyday:v.days.slice().sort().map(i=>t().dayNames[i]).join(sep)}${m.end?` · ${t().ends(esc(fmtDate(m.end,{day:"numeric",month:"short"})))}`:""}</div>
+      ${m.notes?`<div class="small">${esc(m.notes)}</div>`:""}
+      ${calDirty[m.id]?`<div class="note small" style="margin:0">${t().calNeedEdit}</div>`:""}`;
+    if(confirmId===m.id){
+      h+=`<div class="confirm"><div>${esc(t().confirmDel(m.name))}</div><div class="small">${t().calWarn}</div><div class="actions"><button class="btn danger" data-act="del-yes" data-id="${m.id}">${t().yesDel}</button><button class="btn soft" data-act="del-no">${t().cancel}</button></div></div>`;
+    }else{
+      h+=`<div class="actions"><button class="btn soft" data-act="edit" data-id="${m.id}">${t().edit}</button><button class="btn soft" data-act="${p?"resume":"pause"}" data-id="${m.id}">${p?t().resume:t().pause}</button><button class="btn soft" data-act="cal-one" data-id="${m.id}">${t().addCal}</button><button class="btn danger" data-act="del" data-id="${m.id}">${t().del}</button></div>`;
+    }
+    h+=`</div>`;
+  }
+  return h+`</div>`;
+}
+function vHistory(){
+  let h=`<div class="section-head"><h1>${t().history}</h1></div><div class="note">${t().histNote}</div>`;
+  const td=todayStr();
+  // collect dates: last 30 days with scheduled doses, plus any logged keys
+  const byDate={};
+  for(let i=0;i<30;i++){
+    const d=addDays(td,-i);
+    for(const x of dosesOn(d)){
+      if(d===td&&status(d,x.time,x.key)==="upcoming") continue;
+      (byDate[d]=byDate[d]||[]).push({name:x.med.name,dose:x.med.dose,time:x.time,log:S.logs[x.key]});
+    }
+  }
+  // logs of deleted meds / times no longer in schedule
+  for(const [k,log] of Object.entries(S.logs)){
+    const [id,d,tm]=k.split("|"); if(d<addDays(td,-29)) continue;
+    const arr=byDate[d]=byDate[d]||[];
+    if(!arr.some(r=>r.log===log)) arr.push({name:log.name,dose:log.dose,time:tm,log});
+  }
+  const dates=Object.keys(byDate).sort().reverse();
+  if(!dates.length) return h+`<div class="empty"><div class="muted">${t().noHistory}</div></div>`;
+  for(const d of dates){
+    const rows=byDate[d].sort((a,b)=>b.time.localeCompare(a.time));
+    const lbl=d===td?t().todayLbl:d===addDays(td,-1)?t().yesterday:fmtDate(d);
+    h+=`<div class="day"><h3>${esc(lbl)}</h3>`;
+    for(const r of rows){
+      h+=`<div class="hrow"><div><div class="dose-name" style="font-size:1rem">${esc(r.name)}</div><div class="muted small num">${fmtTime(r.time)}${r.log?` · ${t().takenAt(fmtClock(r.log.at))}`:""}</div></div><span class="chip ${r.log?"taken":"open"}">${r.log?"✓ "+t().taken:t().notLogged}</span></div>`;
+    }
+    h+=`</div>`;
+  }
+  return h;
+}
+function vSettings(){
+  const s=S.settings, ar=s.lang==="ar";
+  const standalone=window.navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;
+  return `<div class="section-head"><h1>${t().settings}</h1></div>
+  <div class="group"><h2>${t().remind}</h2><div class="muted small">${t().remindSub}</div>
+    <ol class="steps small">${t().calSteps.map(x=>`<li>${x}</li>`).join("")}</ol>
+    <button class="btn primary block" data-act="cal-all">${t().addAllCal}</button>
+    <label class="switch" for="hideName"><span><span style="font-weight:500">${t().hideName}</span><br><span class="muted small">${t().hideNameSub}</span></span><input type="checkbox" id="hideName" ${s.hideName?"checked":""}></label>
+    <div class="note small" style="margin:0">${t().calWarn}</div>
+  </div>
+  <div class="group"><h2>${t().lang}</h2><div class="seg"><button data-act="lang" data-v="ar" aria-pressed="${ar}">العربية</button><button data-act="lang" data-v="en" aria-pressed="${!ar}">English</button></div></div>
+  <div class="group"><h2>${t().timefmt}</h2><div class="seg"><button data-act="h24" data-v="0" aria-pressed="${!s.h24}">${t().h12}</button><button data-act="h24" data-v="1" aria-pressed="${s.h24}">${t().h24}</button></div></div>
+  ${standalone?"":`<div class="group"><h2>${t().install}</h2><ol class="steps small">${t().installSteps.map(x=>`<li>${x}</li>`).join("")}</ol></div>`}
+  <div class="group"><h2>${t().data}</h2><div class="muted small">${t().dataSub}</div>
+    ${wipeAsk?`<div class="confirm"><div>${t().wipeConfirm}</div><div class="actions"><button class="btn danger" data-act="wipe-yes">${t().wipeYes}</button><button class="btn soft" data-act="wipe-no">${t().cancel}</button></div></div>`
+    :`<button class="btn danger block" data-act="wipe">${t().wipe}</button>`}
+  </div>`;
+}
+
+/* ---------- form sheet ---------- */
+let form=null; // {id|null, name,dose,notes,start,end,times[],days[]}
+function openForm(id){
+  const m=id&&S.meds.find(x=>x.id===id);
+  if(m){const v=m.sched[m.sched.length-1];form={id,name:m.name,dose:m.dose,notes:m.notes||"",start:m.start,end:m.end||"",times:v.times.slice(),days:v.days.slice()}}
+  else form={id:null,name:"",dose:"",notes:"",start:todayStr(),end:"",times:["08:00"],days:[0,1,2,3,4,5,6]};
+  renderForm(); setTimeout(()=>{const el=$("#f-name"); if(el&&!id) el.focus()},50);
+}
+function readForm(){
+  if(!form) return;
+  form.name=$("#f-name").value; form.dose=$("#f-dose").value; form.notes=$("#f-notes").value;
+  form.start=$("#f-start").value; form.end=$("#f-end").value;
+  form.times=[...document.querySelectorAll(".f-time")].map(i=>i.value);
+  form.days=[...document.querySelectorAll(".f-day:checked")].map(i=>+i.value);
+}
+function renderForm(err){
+  if(!form){$("#sheet-root").innerHTML="";return}
+  const order=[6,0,1,2,3,4,5]; // Sat-first, common in Jordan
+  const days=(S.settings.lang==="ar"?order:[1,2,3,4,5,6,0]);
+  $("#sheet-root").innerHTML=`<div class="sheet-bg" data-act="close-bg"><form class="sheet" id="medform" novalidate role="dialog" aria-modal="true" aria-labelledby="f-title">
+   <h2 id="f-title">${form.id?t().editMed:t().addMed}</h2>
+   <div class="field"><label for="f-name">${t().name}</label><input type="text" id="f-name" value="${esc(form.name)}" placeholder="${t().namePh}" autocomplete="off"></div>
+   <div class="field"><label for="f-dose">${t().dose}</label><input type="text" id="f-dose" value="${esc(form.dose)}" placeholder="${t().dosePh}" autocomplete="off"></div>
+   <div class="field"><span class="lbl">${t().times}</span>
+     ${form.times.map((x,i)=>`<div class="timerow"><input type="time" class="f-time" id="f-time-${i}" value="${x}" aria-label="${t().times} ${i+1}">${form.times.length>1?`<button type="button" class="btn ghost" data-act="rm-time" data-i="${i}" aria-label="${t().removeTime}">✕</button>`:""}</div>`).join("")}
+     <button type="button" class="btn ghost" style="align-self:flex-start" data-act="add-time">${t().addTime}</button></div>
+   <div class="field"><span class="lbl">${t().days}</span>
+     <div class="daypick">${days.map(d=>`<label><input type="checkbox" class="f-day" id="f-day-${d}" value="${d}" ${form.days.includes(d)?"checked":""}>${t().dayNames[d]}</label>`).join("")}</div>
+     <button type="button" class="btn ghost" style="align-self:flex-start" data-act="all-days">${t().everyday}</button></div>
+   <div class="row2"><div class="field"><label for="f-start">${t().start}</label><input type="date" id="f-start" value="${form.start}"></div>
+     <div class="field"><label for="f-end">${t().end}</label><input type="date" id="f-end" value="${form.end}"></div></div>
+   <div class="field"><label for="f-notes">${t().notes}</label><textarea id="f-notes">${esc(form.notes)}</textarea></div>
+   ${err?`<div class="err" role="alert">${err}</div>`:""}
+   <div class="row2"><button type="button" class="btn soft" data-act="close">${t().cancel}</button><button type="submit" class="btn primary">${t().save}</button></div>
+  </form></div>`;
+}
+function submitForm(){
+  readForm();
+  const f=form, name=f.name.trim();
+  const times=[...new Set(f.times.filter(Boolean))].sort();
+  if(!name) return renderForm(t().errName);
+  if(!times.length) return renderForm(t().errTimes);
+  if(times.length!==f.times.filter(Boolean).length) return renderForm(t().errDup);
+  if(!f.days.length) return renderForm(t().errDays);
+  if(!f.start) f.start=todayStr();
+  if(f.end&&f.end<f.start) return renderForm(t().errDates);
+  const now=new Date().toISOString(), td=todayStr();
+  const days=f.days.slice().sort((a,b)=>a-b);
+  if(f.id){
+    const m=S.meds.find(x=>x.id===f.id), last=m.sched[m.sched.length-1];
+    const changed=JSON.stringify(last.times)!==JSON.stringify(times)||JSON.stringify(last.days)!==JSON.stringify(days);
+    if(changed){
+      // apply from today on; earlier versions stay so history isn't rewritten
+      const from=td<f.start?f.start:td;
+      if(last.from>=from){last.times=times;last.days=days}
+      else m.sched.push({from,times,days});
+    }
+    if(f.start<m.sched[0].from) m.sched[0].from=f.start;
+    if(changed||m.start!==f.start||(m.end||"")!==(f.end||"")) calDirty[m.id]=true;
+    Object.assign(m,{name,dose:f.dose.trim(),notes:f.notes.trim(),start:f.start,end:f.end||null,updated:now});
+  }else{
+    S.meds.push({id:uid(),name,dose:f.dose.trim(),notes:f.notes.trim(),start:f.start,end:f.end||null,created:now,updated:now,
+      sched:[{from:f.start,times,days}],pauses:[],deleted:false});
+  }
+  save(); form=null; renderForm(); render(); toast(t().saved);
+}
+
+/* ---------- calendar (.ics) ---------- */
+function icsEsc(s){return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n")}
+function fold(line){
+  const enc=new TextEncoder(); let out="", cur="", bytes=0;
+  for(const ch of line){
+    const b=enc.encode(ch).length;
+    if(bytes+b>73){out+=cur+"\r\n ";cur="";bytes=1}
+    cur+=ch; bytes+=b;
+  }
+  return out+cur;
+}
+const BYDAY=["SU","MO","TU","WE","TH","FR","SA"];
+function buildIcs(meds){
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Rakko//Personal//AR","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:ركو"];
+  const td=todayStr(); let n=0;
+  const page=(location.protocol==="https:")?location.href.split("#")[0]:"";
+  for(const m of meds){
+    const v=m.sched[m.sched.length-1];
+    let base=[m.start,v.from,td].sort().pop();
+    if(m.end&&base>m.end) continue;
+    // first matching day so the first event isn't off-schedule
+    for(let i=0;i<7&&!v.days.includes(parseYmd(base).getDay());i++) base=addDays(base,1);
+    const rule=v.days.length===7?"FREQ=DAILY":`FREQ=WEEKLY;BYDAY=${v.days.map(d=>BYDAY[d]).join(",")}`;
+    const until=m.end?`;UNTIL=${m.end.replace(/-/g,"")}T235959`:"";
+    const title=S.settings.hideName?t().calTitle:`${t().calTitle}: ${m.name}`;
+    const desc=S.settings.hideName?"":[m.dose,m.notes].filter(Boolean).join(" — ");
+    for(const tm of v.times){
+      const [h,mi]=tm.split(":");
+      const dt=base.replace(/-/g,"");
+      L.push("BEGIN:VEVENT",`UID:${m.id}-${h}${mi}@rakko`,`DTSTAMP:${stamp}`,
+        `DTSTART:${dt}T${h}${mi}00`,"DURATION:PT10M",
+        `RRULE:${rule}${until}`,fold(`SUMMARY:${icsEsc(title)}`));
+      if(desc) L.push(fold(`DESCRIPTION:${icsEsc(desc)}`));
+      if(page) L.push(fold(`URL:${page}`));
+      L.push("TRANSP:TRANSPARENT","BEGIN:VALARM","ACTION:DISPLAY",fold(`DESCRIPTION:${icsEsc(title)}`),"TRIGGER:PT0M","END:VALARM","END:VEVENT");
+      n++;
+    }
+  }
+  L.push("END:VCALENDAR");
+  return n?L.join("\r\n")+"\r\n":"";
+}
+function openIcs(ics,name){
+  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(iOS){ location.href=url; } // Safari shows the "Add All" calendar sheet
+  else { const a=document.createElement("a"); a.href=url; a.download=name+".ics"; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function calExport(ids){
+  const meds=S.meds.filter(m=>!m.deleted&&!pausedNow(m)&&(!ids||ids.includes(m.id)));
+  const ics=buildIcs(meds);
+  if(!ics) return toast(t().calNoMeds);
+  meds.forEach(m=>delete calDirty[m.id]);
+  openIcs(ics,t().calFile);
+  if(tab==="meds") render();
+}
+window.__pc={buildIcs,dosesOn,status,schedFor,get S(){return S}}; // for testing
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tab],[data-act]"); if(!b) return;
+  if(b.dataset.tab){tab=b.dataset.tab;confirmId=null;wipeAsk=false;render();scrollTo(0,0);return}
+  const a=b.dataset.act, id=b.dataset.id, td=todayStr();
+  const med=id&&S.meds.find(m=>m.id===id);
+  switch(a){
+    case "take":{const k=b.dataset.key; if(S.logs[k]) return; const m=S.meds.find(x=>x.id===k.split("|")[0]);
+      S.logs[k]={at:new Date().toISOString(),name:m.name,dose:m.dose}; save(); render(); toast(t().takenToast); break}
+    case "undo": delete S.logs[b.dataset.key]; save(); render(); toast(t().undone); break;
+    case "add": openForm(null); break;
+    case "edit": openForm(id); break;
+    case "close": form=null; renderForm(); break;
+    case "close-bg": if(e.target===b){form=null;renderForm()} break;
+    case "add-time": readForm(); form.times.push(""); renderForm(); {const ins=document.querySelectorAll(".f-time"); ins[ins.length-1].focus()} break;
+    case "rm-time": readForm(); form.times.splice(+b.dataset.i,1); renderForm(); break;
+    case "all-days": readForm(); form.days=[0,1,2,3,4,5,6]; renderForm(); break;
+    case "pause": med.pauses=med.pauses||[]; med.pauses.push({from:td,to:null}); calDirty[id]=true; save(); render(); break;
+    case "resume": {const p=med.pauses.find(x=>!x.to); if(p){ if(p.from===td) med.pauses.splice(med.pauses.indexOf(p),1); else p.to=td;} calDirty[id]=true; save(); render(); break}
+    case "del": confirmId=id; render(); break;
+    case "del-no": confirmId=null; render(); break;
+    case "del-yes": med.deleted=true; med.updated=new Date().toISOString(); confirmId=null; save(); render(); break;
+    case "cal-one": calExport([id]); break;
+    case "cal-all": calExport(null); break;
+    case "lang": S.settings.lang=b.dataset.v; save(); render(); break;
+    case "h24": S.settings.h24=b.dataset.v==="1"; save(); render(); break;
+    case "wipe": wipeAsk=true; render(); break;
+    case "wipe-no": wipeAsk=false; render(); break;
+    case "wipe-yes": try{localStorage.removeItem(KEY)}catch(_){}
+      S={v:1,settings:{lang:S.settings.lang,h24:S.settings.h24,hideName:false},meds:[],logs:{}}; calDirty={}; wipeAsk=false; save(); render(); toast(t().wiped); break;
+  }
+});
+document.addEventListener("change",e=>{ if(e.target.id==="hideName"){S.settings.hideName=e.target.checked;save()} });
+document.addEventListener("submit",e=>{ if(e.target.id==="medform"){e.preventDefault();submitForm()} });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&form){form=null;renderForm()} });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&!form) render() });
+setInterval(()=>{ if(!form&&tab==="today") render() },60000);
+
+render();
+})();
+</script>
+</body>
+</html>
